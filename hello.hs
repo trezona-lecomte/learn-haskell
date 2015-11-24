@@ -32,3 +32,13 @@ repeatString str n =
 -- Pattern matching:
 
 firstElement (a,b) = a
+
+
+removeOdd [] = []
+removeOdd (x : xs)
+  | mod x 2 == 0 = x : (removeOdd xs)
+  | otherwise    = removeOdd xs
+
+intsFrom n = n : (intsFrom (n+1))
+intsToInfinity = intsFrom 1
+

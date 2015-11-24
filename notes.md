@@ -1,4 +1,67 @@
-# Haskell
+# Haskell Notes
+
+## Functional Programming
+
+What do we mean by pure? Referential Transparency:
+
+* No mutation! Variables, data structures etc are immutable.
+
+* Expressions don't have side-effects like updating global state or
+  printing to the screen.
+
+* Calling a function multiple times with the same arguments results
+  in the same output.
+
+## Data types
+
+* `type` can be used to declare (unenforced) type aliases, such as:
+    `type GearCount = Int`
+
+* `newtype` can be used to declare enforced types, such as:
+    `newtype Make = Make Text`
+
+* `data` can be used to declare ADTs, such as:
+    `data Vehicle = Bicycle GearCount | Car Make Model`
+
+* The `String` type is defined as `type String = [char]`, but there
+  are a few limitations with this: it's inefficient as we need to
+  allocate fresh memory for each cons cell, and the characters
+  themselves take up a full machine word; also we sometimes need
+  string-like data that's not actually text such as ByteStrings and
+  HTML. To work around this, there is a language extension called
+  `OverloadedStrings` which defines string literals with the type:
+    `IsString a -> a`
+  There are `IsString` instances available for a number of types in
+  haskell, such as `Text`, `ByteString` and `Html`.
+
+## Actions
+
+While actions can result in values that are used by the program, they
+do not take any arguments. Consider `putStrLn`. It has the following
+type:
+
+    putStrLn :: String -> IO ()
+
+`PutStrLn` takes an argument, but it is not an action. It is a
+function that takes one argument (a string) and returns an action of
+type `IO ()`.
+
+So `putStrLn` is not an action, but `putStrLn "hello"` is. The
+distinction is subtle but important. All `IO` actions are of type `IO`
+a for some type `a`. They will never require additional arguments,
+although a function which makes the action (such as `putStrLn`) may.
+
+* IO actions are used to affect the world outside of the program.
+* Actions take no arguments but have a result value.
+* Actions are inert until run. Only one IO action in a Haskell program
+  is run (main).
+* Do-blocks combine multiple actions together into a single action.
+* Combined IO actions are executed sequentially with observable
+  side-effects.
+* Arrows are used to bind action results in a do-block.
+* Return is a function that builds actions. It is not a form of
+  control flow!
+
 
 ## WTF mate?
 
@@ -167,5 +230,86 @@ guards to check if `x` is even, and if so we return `x` `cons`'d with
 the result of calling removeOdd on the remaining list, otherwise if
 it's odd we just return the result of calling removeOdd on the
 remaining list.
+
+
+## Case Expressions
+
+What if we want to pattern match somewhere other than a function
+definition?
+
+Here is a semantically identical `double` function that uses case
+expressions for exactly that purpose:
+
+    double nums = case nums of
+      []       -> []
+      (x : xs) -> (2 * x) : (double xs)
+
+Here's another example of a case expression, but this time it can't be
+easily rewritten using pattern matching:
+
+    anyEven nums = case (removeOdd nums) of
+      []       -> False
+      (x : xs) -> True
+
+Instead of pattern matching on the argument of the function, here we
+pattern match on the result of the removeOdd function.
+
+Remember: you can't use guards in a case expression, so you'll have to
+use an if expression if you need to do that.
+
+## Let Bindings
+
+`let` defines a local variable:
+
+    fancyNine =
+      let x = 4
+          y = 5
+      in x + y
+
+    numEven nums =
+      let evenNums = removeOdd nums
+      in length evenNums
+
+## Where Bindings
+
+`where` bindings come after the function that uses them:
+
+    fancyNine = x + y
+      where x = 4
+            y = 5
+
+Where bindings always go with a function definition, so we can't use
+them inside other expressions. We can use let in other expressions
+though:
+
+Not allowed: `fancyTen = 2 * (a + 1 where a = 4)`
+
+Allowed: `fancyTen = 2 * (let a = 4 in a + 1)`
+
+## Whitespace
+
+- Whitespace can have meaning
+
+- Indent further when breaking expression onto following line
+
+- Line up variable bindings
+
+## Lazy Function Evalutation
+
+This can have an impact of performance. A bizzare consequence is that
+we can create infinite lists:
+
+    intsFrom n = n : (intsFrom (n+1))
+    intsToInfinity = intsFrom 1
+
+Here ints is defined as all possible integers from 1 up!
+
+Note that haskell is so lazy, it only every evaluates a function as
+much as it needs for the calling functions requirements. This means we
+can do crazy stuff like:
+
+    > let evenIntsToInfinity = removeOdd intsToInfinity
+    > Take 10 evenIntsToInfinity
+    >> [2,4,6,8,10,12,14,16,18,20]
 
 
